@@ -1,0 +1,105 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  application:
+    name: ai-workorder-service
+
+  # ✅ 关键：禁用 Spring Security 自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+  # ✅ 禁用默认的 in-memory 用户
+  security:
+    user:
+      name:
+      password:
+
+  datasource:
+    # ✅ 修复：添加 allowPublicKeyRetrieval=true 解决 MySQL 8.0 公钥检索问题
+    url: jdbc:mysql://localhost:3306/ai_workorder?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+
+  # ====================== 已替换为 硅基流动 DeepSeek ======================
+  ai:
+    openai:
+      api-key: sk-hhfkvibpxryikzbdrwteitwcnktmdntwjvavtpikseaperbs
+      # 硅基流动官方接口地址
+      base-url: https://api.siliconflow.cn
+      chat:
+        options:
+          # 深度求索模型
+          model: deepseek-ai/DeepSeek-V3.2
+          temperature: 0.7
+          max-tokens: 1024
+          top-p: 0.9
+  # ====================== 已删除原豆包配置 ======================
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password: ""
+    timeout: 10000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.aiworkorder.ai_workorder_service
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    default-statement-timeout: 30
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+springdoc:
+  api-docs:
+    enabled: true
+  packages-to-scan: com.aiworkorder.ai_workorder_service.controller
+
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
+    enable-debug: true
+
+jwt:
+  secret: liu-jie-order-key-123456
+  expire: 86400000
+
+logging:
+  level:
+    root: INFO
+    com.aiworkorder: INFO
+    org.springframework.security: WARN
+    com.baomidou.mybatisplus: WARN
+    org.springframework.ai: DEBUG
+  file:
+    path: ./logs
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+
+

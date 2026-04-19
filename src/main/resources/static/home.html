@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能工单系统 - 工作台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: #f1f5f9;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        padding: 24px;
+    }
+    .app-container {
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        padding: 16px 28px;
+        border-radius: 28px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 28px;
+    }
+    .logo { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .user-info { display: flex; align-items: center; gap: 16px; }
+    .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 18px; border-radius: 40px; cursor: pointer; font-weight: 500; }
+    .logout-btn:hover { background: #dc2626; }
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+        gap: 24px;
+    }
+    .card {
+        background: white;
+        border-radius: 28px;
+        padding: 20px 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: 0.2s;
+    }
+    .card h3 {
+        font-size: 1.3rem;
+        margin-bottom: 16px;
+        border-left: 5px solid #4f46e5;
+        padding-left: 14px;
+        color: #0f172a;
+    }
+    .form-row { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    label { font-weight: 500; min-width: 80px; color: #334155; }
+    input, select, textarea {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 16px;
+        font-size: 0.9rem;
+    }
+    button {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 40px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    button.secondary { background: #64748b; }
+    button.danger { background: #ef4444; }
+    button.small { padding: 6px 14px; font-size: 0.8rem; }
+    pre {
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 16px;
+        overflow-x: auto;
+        margin-top: 12px;
+        font-size: 0.85rem;
+    }
+    .kb-table, .order-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+    }
+    .kb-table th, .kb-table td, .order-table th, .order-table td {
+        padding: 10px 6px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: left;
+        font-size: 0.85rem;
+    }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+    .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
+    hr { margin: 16px 0; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <header>
+    <div class="logo">🤖 AI 智能工单系统</div>
+    <div class="user-info">
+      <span>👤 <span id="displayUsername"></span> (ID: <span id="displayUserId"></span>)</span>
+      <button class="logout-btn" id="logoutBtn">登出</button>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <!-- AI 聊天模块 -->
+    <div class="card">
+      <h3>💬 AI 智能助手</h3>
+      <div class="form-row"><label>用户ID：</label><input type="number" id="chatUserId" placeholder="用户ID"></div>
+      <div class="form-row"><label>消息：</label><textarea id="chatMessage" rows="2" placeholder="输入您的问题..."></textarea></div>
+      <div class="form-row">
+        <button id="singleChatBtn">📝 单轮对话</button>
+        <button id="multiChatBtn">🔄 多轮对话</button>
+        <button id="hybridBtn">🔍 混合检索</button>
+      </div>
+      <div id="chatResult" class="result-area"><pre>AI 回答将显示在此处</pre></div>
+      <div class="flex-between"><button id="loadHistoryBtn" class="secondary small">📜 查看历史对话</button></div>
+      <div id="historyList" style="max-height:200px; overflow:auto; margin-top:12px; font-size:0.8rem;"></div>
+    </div>
+
+    <!-- 知识库管理 -->
+    <div class="card">
+      <h3>📚 知识库管理</h3>
+      <div class="form-row"><label>标题：</label><input type="text" id="kbTitle" placeholder="标题"></div>
+      <div class="form-row"><label>内容：</label><textarea id="kbContent" rows="2" placeholder="知识内容"></textarea></div>
+      <div class="form-row"><label>关键词：</label><input type="text" id="kbKeyword" placeholder="关键词"></div>
+      <div class="form-row">
+        <button id="addKbBtn">➕ 添加</button>
+        <button id="updateKbBtn">✏️ 更新</button>
+        <input type="hidden" id="updateKbId">
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchKeyword" placeholder="搜索关键词...">
+        <button id="searchKbBtn" class="small">搜索</button>
+        <button id="listKbBtn" class="secondary small">刷新列表</button>
+      </div>
+      <div style="max-height: 300px; overflow-y: auto;">
+        <table class="kb-table" id="kbTable">
+          <thead><tr><th>ID</th><th>标题</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 工单管理 -->
+    <div class="card">
+      <h3>🎫 工单管理</h3>
+      <div class="form-row"><label>用户ID：</label><input type="number" id="orderUserId" placeholder="用户ID"></div>
+      <div class="form-row"><label>类型：</label><input id="orderType" placeholder="如 登录问题/功能异常"></div>
+      <div class="form-row"><label>优先级：</label><select id="orderLevel"><option>low</option><option>medium</option><option>high</option></select></div>
+      <div class="form-row"><label>内容：</label><textarea id="orderContent" rows="2" placeholder="工单描述"></textarea></div>
+      <div class="form-row"><button id="createOrderBtn">📄 创建工单</button><button id="autoOrderBtn">🤖 AI自动创建工单</button></div>
+      <hr>
+      <div class="form-row"><label>工单ID：</label><input type="number" id="queryOrderId" placeholder="工单ID"><button id="getOrderBtn">查询</button></div>
+      <div class="form-row"><label>修改状态：</label><input id="updateStatusId" placeholder="工单ID"><select id="newStatus"><option>PROCESSING</option><option>CLOSED</option></select><button id="updateStatusBtn">更新状态</button></div>
+      <div id="orderResult"><pre>工单信息展示区</pre></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 后端API地址
+  const API_BASE = window.location.origin || 'http://localhost:8080';
+
+  // 通用请求函数
+  async function apiRequest(endpoint, method = 'GET', body = null, customHeaders = {}) {
+      const url = `${API_BASE}${endpoint}`;
+      const headers = {
+          'Content-Type': 'application/json',
+          ...customHeaders
+      };
+      const config = { method, headers };
+      if (body && (method === 'POST' || method === 'PUT')) {
+          config.body = JSON.stringify(body);
+      }
+      const response = await fetch(url, config);
+      let data;
+      try {
+          data = await response.json();
+      } catch (e) {
+          throw new Error(`请求失败: ${response.status}`);
+      }
+      if (data.code !== 200) {
+          throw new Error(data.message || `请求异常 (${data.code})`);
+      }
+      return data;
+  }
+
+  // 获取存储的用户信息
+  const token = localStorage.getItem('token');
+  const username = localStorage.getItem('username');
+  const storedUserId = localStorage.getItem('userId');
+  if (!token) window.location.href = 'login.html';
+  document.getElementById('displayUsername').innerText = username || '未知';
+  document.getElementById('displayUserId').innerText = storedUserId || '未设置';
+  if (storedUserId) {
+      document.getElementById('chatUserId').value = storedUserId;
+      document.getElementById('orderUserId').value = storedUserId;
+  }
+
+  function authHeaders() {
+      return { 'Authorization': `Bearer ${token}` };
+  }
+
+  // ---------- AI 聊天 ----------
+  document.getElementById('singleChatBtn').onclick = async () => {
+      const userId = document.getElementById('chatUserId').value;
+      const message = document.getElementById('chatMessage').value;
+      if (!userId || !message) { alert('请填写用户ID和消息'); return; }
+      try {
+          const res = await apiRequest('/api/chat/single', 'POST', { userId: parseInt(userId), message }, authHeaders());
+          document.querySelector('#chatResult pre').innerText = res.data;
+      } catch (e) { alert('错误：'+e.message); }
+  };
+  document.getElementById('multiChatBtn').onclick = async () => {
+      const userId = document.getElementById('chatUserId').value;
+      const message = document.getElementById('chatMessage').value;
+      if (!userId || !message) return alert('请填写信息');
+      try {
+          const res = await apiRequest('/api/chat/conversation', 'POST', { userId: parseInt(userId), message }, authHeaders());
+          document.querySelector('#chatResult pre').innerText = res.data;
+      } catch (e) { alert(e.message); }
+  };
+  document.getElementById('hybridBtn').onclick = async () => {
+      const message = document.getElementById('chatMessage').value;
+      if (!message) return alert('请输入问题');
+      try {
+          const res = await apiRequest('/api/chat/retrieval', 'POST', { message }, authHeaders());
+          document.querySelector('#chatResult pre').innerText = res.data;
+      } catch (e) { alert(e.message); }
+  };
+  document.getElementById('loadHistoryBtn').onclick = async () => {
+      const userId = document.getElementById('chatUserId').value;
+      if (!userId) return alert('输入用户ID');
+      try {
+          const res = await apiRequest(`/api/chat/history?userId=${userId}`, 'GET', null, authHeaders());
+          const history = res.data;
+          const container = document.getElementById('historyList');
+          if (!history.length) { container.innerHTML = '<div>暂无历史</div>'; return; }
+          container.innerHTML = history.map(h => `<div><b>用户:</b> ${h.userMessage}<br/><b>AI:</b> ${(h.aiAnswer || '').substring(0,80)}...<hr/></div>`).join('');
+      } catch (e) { alert(e.message); }
+  };
+
+  // ---------- 知识库 ----------
+  async function loadKbList() {
+      try {
+          const res = await apiRequest('/api/kb/list', 'POST', {}, authHeaders());
+          const list = res.data;
+          const tbody = document.querySelector('#kbTable tbody');
+          tbody.innerHTML = list.map(k => `
+              <tr>
+                  <td>${k.id}</td><td>${k.title}</td>
+                  <td><button class="small editKb" data-id="${k.id}" data-title="${k.title}" data-content="${k.content}" data-keyword="${k.keyword || ''}">编辑</button>
+                  <button class="small danger delKb" data-id="${k.id}">删除</button></td>
+              </tr>
+          `).join('');
+          document.querySelectorAll('.editKb').forEach(btn => {
+              btn.onclick = () => {
+                  document.getElementById('kbTitle').value = btn.dataset.title;
+                  document.getElementById('kbContent').value = btn.dataset.content;
+                  document.getElementById('kbKeyword').value = btn.dataset.keyword;
+                  document.getElementById('updateKbId').value = btn.dataset.id;
+              };
+          });
+          document.querySelectorAll('.delKb').forEach(btn => {
+              btn.onclick = async () => {
+                  if (confirm('删除知识库条目？')) {
+                      // ✅ 修复：改为 query 参数形式，符合后端 @RequestParam
+                      await apiRequest(`/api/kb/delete?id=${btn.dataset.id}`, 'POST', null, authHeaders());
+                      loadKbList();
+                  }
+              };
+          });
+      } catch(e) { alert('加载知识库失败'); }
+  }
+  document.getElementById('addKbBtn').onclick = async () => {
+      const title = document.getElementById('kbTitle').value;
+      const content = document.getElementById('kbContent').value;
+      const keyword = document.getElementById('kbKeyword').value;
+      if (!title || !content) return alert('标题和内容不能为空');
+      await apiRequest('/api/kb/add', 'POST', { title, content, keyword }, authHeaders());
+      alert('添加成功'); clearKbForm(); loadKbList();
+  };
+  document.getElementById('updateKbBtn').onclick = async () => {
+      const id = document.getElementById('updateKbId').value;
+      if (!id) return alert('请先点击编辑选择条目');
+      const title = document.getElementById('kbTitle').value;
+      const content = document.getElementById('kbContent').value;
+      const keyword = document.getElementById('kbKeyword').value;
+      await apiRequest('/api/kb/update', 'POST', { id: parseInt(id), title, content, keyword }, authHeaders());
+      alert('更新成功'); clearKbForm(); loadKbList();
+  };
+  document.getElementById('searchKbBtn').onclick = async () => {
+      const kw = document.getElementById('searchKeyword').value;
+      if (!kw) return loadKbList();
+      const res = await apiRequest(`/api/kb/search?keyword=${encodeURIComponent(kw)}`, 'GET', null, authHeaders());
+      const list = res.data;
+      const tbody = document.querySelector('#kbTable tbody');
+      tbody.innerHTML = list.map(k => `<tr><td>${k.id}</td><td>${k.title}</td><td><button disabled>只读</button></td>`).join('');
+  };
+  document.getElementById('listKbBtn').onclick = () => loadKbList();
+  function clearKbForm() {
+      document.getElementById('kbTitle').value = '';
+      document.getElementById('kbContent').value = '';
+      document.getElementById('kbKeyword').value = '';
+      document.getElementById('updateKbId').value = '';
+  }
+  loadKbList();
+
+  // ---------- 工单 ----------
+  document.getElementById('createOrderBtn').onclick = async () => {
+      const userId = document.getElementById('orderUserId').value;
+      const type = document.getElementById('orderType').value;
+      const level = document.getElementById('orderLevel').value;
+      const content = document.getElementById('orderContent').value;
+      if (!userId || !type || !content) return alert('请完整填写工单信息');
+      try {
+          const res = await apiRequest('/api/order/create', 'POST', { userId: parseInt(userId), type, level, content }, authHeaders());
+          document.getElementById('orderResult').innerHTML = `<pre>工单创建成功，ID: ${res.data}</pre>`;
+      } catch(e) { alert(e.message); }
+  };
+  document.getElementById('autoOrderBtn').onclick = async () => {
+      const userId = document.getElementById('orderUserId').value;
+      const question = document.getElementById('orderContent').value;
+      if (!userId || !question) return alert('请输入用户ID和问题描述');
+      try {
+          const res = await apiRequest('/api/order/auto-create', 'POST', { userId: parseInt(userId), question }, authHeaders());
+          document.getElementById('orderResult').innerHTML = `<pre>AI自动创建工单成功，ID: ${res.data}</pre>`;
+      } catch(e) { alert(e.message); }
+  };
+  document.getElementById('getOrderBtn').onclick = async () => {
+      const id = document.getElementById('queryOrderId').value;
+      if (!id) return alert('输入工单ID');
+      try {
+          const res = await apiRequest(`/api/order/${id}`, 'GET', null, authHeaders());
+          const order = res.data;
+          document.getElementById('orderResult').innerHTML = `<pre>${JSON.stringify(order, null, 2)}</pre>`;
+      } catch(e) { alert(e.message); }
+  };
+  document.getElementById('updateStatusBtn').onclick = async () => {
+      const id = document.getElementById('updateStatusId').value;
+      const status = document.getElementById('newStatus').value;
+      if (!id) return alert('输入工单ID');
+      try {
+          await apiRequest(`/api/order/status?id=${id}&status=${status}`, 'PUT', null, authHeaders());
+          alert('状态更新成功');
+      } catch(e) { alert(e.message); }
+  };
+
+  // ✅ 修复：登出时调用后端接口，使 token 失效
+  document.getElementById('logoutBtn').onclick = async () => {
+      try {
+          await apiRequest('/api/auth/logout', 'POST', null, authHeaders());
+      } catch(e) {
+          console.warn('登出接口调用失败（可能后端未实现）', e);
+      } finally {
+          localStorage.clear();
+          window.location.href = 'login.html';
+      }
+  };
+</script>
+</body>
+</html>
