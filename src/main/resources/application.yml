@@ -15,7 +15,7 @@ spring:
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
 
-  # ✅ 禁用默认的 in-memory 用户
+  # ✅ 禁用默认的 in-memory 用
   security:
     user:
       name:
