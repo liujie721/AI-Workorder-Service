@@ -14,7 +14,7 @@ public class AiChatService {
 
     private final ChatClient chatClient;
     private final ChatRecordService chatRecordService;
-    // 🔥 新增：注入知识库服务（必须加，否则混合检索用不了）
+    // 🔥 新增：注入知识库服务（必须加，否则混合检索用不）
     private final KnowledgeService knowledgeService;
 
     // 单轮对话（原有，不动）
